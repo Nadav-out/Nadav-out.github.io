@@ -1,0 +1,35 @@
+---
+layout: post
+title:  "Central Limit Theorem like a physicist"
+date:   2023-06-07
+# tags:   first-post introduction jekyll
+math: true
+date:   2023-06-07 10:44:59 -0700
+categories: jekyll update
+---
+I'm freshinig up my statistics knowledge, and trying to make a better sense of the [Central Limit Theorem (CLT)](https://en.wikipedia.org/wiki/Central_limit_theorem). There are quite a few derivations out there, and there is a great in depth post about it by Terence Tao [here](https://terrytao.wordpress.com/2010/01/05/254a-notes-2-the-central-limit-theorem/).
+Yet, I found this very neat derivation, that I think appealed to my inner physicsist, due to it's resemblnce to technics used in quantum field theory and statistical physics. $ X+Y $ asdv
+
+$$ X+Y $$
+
+<!-- 
+## Prelims
+#### The distribution of a statistic 
+Given a random sample $\boldsymbol{X}=\{X_i\}_{i=1}^N$, the random variable \\(Z=T(\boldsymbol{X})\\) is called a *statistic*. The distribuion of \\(Z\\) is most easily calculated through its CDF
+$$ F_Z(z)={\cal P}(Z>z)={\cal P}(T(\boldsymbol{X})>z)=\int d\boldsymbol{X} \Theta(T(\boldsymbol{X})-z)f_{\boldsymbol{X}}(\boldsymbol{X}),$$
+where \\(f_{\boldsymbol{X}}(\boldsymbol{X})\\) is the joint ditribution of \\(\boldsymbol{X}\\) and \\(\Theta\\) is the Heavyside step function. Since the PDF is the derivative of the  CDF, we can write
+\\[ f_Z(z)=\frac{d}{dz}F_Z(z)=\int d\boldsymbol{X} \delta(T(\boldsymbol{X})-z)f_{\boldsymbol{X}}(\boldsymbol{X}),\\]
+where \\(\delta\\) is the Dirac delta function.
+
+
+#### The distribution of the sum over of a samle
+Next we define the random variable \\(S=\sum_{i=1}^N X_i\\). The distribution of \\(S\\) is given by
+\\[ 
+f_S(s)=\int d\boldsymbol{X} \delta(s-S)f_{\boldsymbol{X}}(\boldsymbol{X}).
+\\] -->
+
+
+
+
+
+
