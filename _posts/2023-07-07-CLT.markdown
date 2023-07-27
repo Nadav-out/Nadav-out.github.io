@@ -1,0 +1,118 @@
+---
+layout: post
+title:  "Central Limit Theorem like a physicist"
+date:   2023-06-07
+tags:   CLT derivation physics statistics
+math:   true
+date:   2023-06-07 10:44:59 -0700
+categories: Statistics
+---
+I'm freshening up my statistics, and trying to make a better sense of the [Central Limit Theorem (CLT)](https://en.wikipedia.org/wiki/Central_limit_theorem). There are quite a few derivations out there, including a comprehensive [post by Terence Tao](https://terrytao.wordpress.com/2010/01/05/254a-notes-2-the-central-limit-theorem/).
+Yet, I found this very neat derivation, which appeals to my inner physicsist, due to it's resemblnce to techniques used in quantum field theory and statistical physics.
+
+
+## Building Blocks
+### The distribution of a statistic 
+Given a random sample $\boldsymbol{X}=\\{X_i\\}_{i=1}^N $, the random variable $ Z=T(\boldsymbol{X}) $ is called a *statistic*. The distribuion of $Z$ is most easily calculated through its CDF
+
+$$ F_Z(z)={\cal P}(Z>z)={\cal P}(T(\boldsymbol{x})>z)=\int d\boldsymbol{x} \Theta(T(\boldsymbol{x})-z)f_{\boldsymbol{X}}(\boldsymbol{x}),$$
+
+
+where $f_{\boldsymbol{X}}(\boldsymbol{x})$ is the joint distribution of $\boldsymbol{X}$ and $\Theta$ is the Heavyside step function. Since the PDF is the derivative of the  CDF, we can write
+
+$$ f_Z(z)=\frac{d}{dz}F_Z(z)=\int d\boldsymbol{x} \delta(T(\boldsymbol{x})-z)f_{\boldsymbol{X}}(\boldsymbol{x}), $$
+
+where $\delta$ is the Dirac delta function.
+
+
+### The distribution and characteristic functionof the sum over of a sample
+For the specific statistics which is the sum of a random sample, $S=\sum_{i=1}^N X_i$, the distribution is given by
+
+$$ f_S(s)=\int d\boldsymbol{X} \delta\left(s-\sum_{i=1}^N x_i\right)f_{\boldsymbol{X}}(\boldsymbol{x}). $$
+
+It will prove very convinient to study the Fourier Transform (FT) of $f_S$, (which in statisticians lingo is known as the *characteristic function*) 
+
+$$ \varphi_S(t)=E\left[e^{itS}\right]= \int d\boldsymbol{x} e^{it\sum x_i}f_{\boldsymbol{X}}(\boldsymbol{x})=\int \prod_{i=1}^N\left[dx_i e^{itx_i}\right] f_{\boldsymbol{X}}(\boldsymbol{x}).$$
+
+Now, since $\boldsymbol{X}$ is a random sample of a distribuiton, the different $X_i$'s are iid random variables. This allows us to write $f_{\boldsymbol{X}}(\boldsymbol{x})=f_X(x_1)f_X(x_2)...f_X(x_N)$, where $f_X(x)$ is the PDF of the random variable $X$. In that case, we get
+ 
+<div id="eq_phiS_phiX">
+$$ \varphi_S(t)=[\varphi_X(t)]^N. \tag{1} $$
+</div>
+
+
+### The distribution of the sample mean
+The sample mean is defined as $\overline{X}=S/N$. It is a simple exercise to get from $f_S(s)$ to
+
+$$ f_{\overline{X}}(\overline{x})=Nf_S(\overline{x}N), $$
+
+which, using the scaling property of the FT, gives
+
+<div id="eq_phi_mean">
+$$ \varphi_{\overline{X}}(t)=\varphi_{S}\left(\frac{t}{N}\right)=\left[\varphi_X\left(\frac{t}{N}\right)\right]^N \tag{2}$$ 
+</div>
+
+
+
+
+### The cumulant generating function
+$H_X(t)=\log \varphi_X(t)$ is someties referred to as the cumulant generating function. The usefulness of this function should be familiar to most physicists, as it is very similar to the log of the partition function, both in the context  of thermodynamics and quantum field theories. The $n$'th taylor coefficient of $H$ gives the $n$'th cumulant
+
+$$ H_X(0)=1\;\;,\;\; H_X'(0)=i \left\langle X\right\rangle\;\;,\;\;H_X''(0)=-{\rm Var}[X]\;\;,... $$
+
+With [Eq.[1]](#eq_phiS_phiX) in mind, we can immediatly see that if the $n$'th cumulant of $X$ is given by $\kappa_n[X]$, the  $n$'th cumulant of  $S$ will be given by $\kappa_n[S] = N\kappa_n[X]$. Using [Eq.[2]](#eq_phi_mean) we also see that 
+
+$$
+\kappa_n[\overline{X}]=N^{1-n}\kappa_n[X]
+$$
+
+
+# The Central limit theorem
+From the previous discussion, it is clear that the mean and varince of $\overline{X}$ are given by
+
+$$  \left\langle \overline{X} \right\rangle=\left\langle {X} \right\rangle=\mu \;\;,\;\;{\rm Var}[\overline{X}]=\frac{1}{N}{\rm Var}[X]=\frac{\sigma^2}{N}
+$$
+
+Therefore, we can define a normalized variable with unit variance and zero mean
+
+$$
+Z=\frac{\overline{X}-\mu}{\sigma/\sqrt{N}}
+$$
+
+Using the FT properties again, it is simple to see that
+
+$$
+\varphi_Z(t)=\varphi_{\overline{X}}\left(\frac{t}{\sigma/\sqrt{N}}\right)\exp\left[-it\frac{\sqrt{N}\mu}{\sigma}\right],
+$$
+
+and thus 
+
+$$ H_Z(t)=-i\sqrt{N}t\mu/\sigma+H_{\overline{X}}(\sqrt{N}t/\sigma)=-i\sqrt{N}t\mu/\sigma+N H_X(t/\sqrt{N}\sigma). $$
+
+This allows us to write the cumulants of $Z$ in terms of the cumulants of $X$ very simply,
+
+$$
+\kappa_0[Z]=\kappa_1[Z]=0\;\;,\;\;\kappa_2[z]=-1\;\;,\;\; \kappa_{n\geq 3}[Z]=\frac{\kappa_n[X]}{\sigma^n} N^{1-n/2}.
+$$
+
+And here is the fun part: All comulats higher than the variance scale as $N$ to a negative power. This means that, regardless of the initial distribution,
+
+$$ \lim_{N\to\infty} H_Z(t)=-\frac{t^2}{2}. $$
+
+Exponentiating, we get a Gaussian, whose inverse FT is the PDF of $Z$
+
+$$ f_Z(z)= \frac{1}{\sqrt{2\pi}}e^{-z^2/2}. $$
+
+We have established the CLT!
+
+$$
+\boxed{\left[\lim_{N\to\infty}\frac{1}{N}\sum_{i=1}^NX_i\right]\sim{\cal N}\left(\mu,\sigma/\sqrt{N}\right)}
+$$
+
+
+
+
+
+
+
+
