@@ -17,4 +17,42 @@ $$
     \Lambda(s,w)=\frac{1}{2}\left(s w^2+\frac{1}{s}\right).
 $$
 
-As long as we restrict the domain to $s>0$, the minimum of $\Lambda$ w.r.t.$s$ at fixed $w$ is when $\Lambda=\vert w\vert$. Why is this the one I want to focus on? Simply because it is a quadratic function in $w$.
+As long as we restrict the domain to $s>0$, the minimum of $\Lambda$ w.r.t.$s$ at fixed $w$ is when $\Lambda=\vert w\vert$. Why is this the one I want to focus on? Simply because it is a quadratic function in $w$. What does this have to do with lasso regression? Well, let's recall that in lasso regression, we basically add the $L_1$ norm  of the weights to the loss function. Namely, if the unregulated loss function is $\ell(w)$, then the lasso loss function is
+
+$$
+    \ell_{\rm lasso}(\boldsymbol{w})=\ell(\boldsymbol{w})+\lambda\Vert \boldsymbol{w}\Vert_1=\ell(\boldsymbol{w})+\sum_i\lambda\vert w_i\vert.
+$$
+
+Our short discussion about the $\Lambda$ function teaches us that the lasso regression can also be expressed as
+
+$$
+   \ell_{\rm lasso}(\boldsymbol{w},\boldsymbol{s})=\ell(\boldsymbol{w})+\frac{\lambda}{2}\left[\boldsymbol{w}^T{\rm diag}[\boldsymbol{s}]\boldsymbol{w}+{\rm diag}[\boldsymbol{s}]^{-1}\right],
+$$
+
+where $\boldsymbol{s}$ is a vector of Lagrange multipliers, of the same dimension as $\boldsymbol{w}$. Calling it otherwise, we have doubled weight space. What have we gained? The dependence on $\boldsymbol{w}$ is now quadratic, and the gradients w.r.t. both $\boldsymbol{w}$ and $\boldsymbol{s}$ are very simple.
+
+$$
+    \boldsymbol{\nabla}_{\boldsymbol{w}}\ell_{\rm lasso}=\boldsymbol{\nabla}_{\boldsymbol{w}}\ell+\lambda\,{\rm diag}[\boldsymbol{s}]\boldsymbol{w}\;\;,\;\;\frac{\partial\ell_{\rm lasso}}{\partial s_i}=w_i^2-s_i^{-2}
+$$
+
+### The simplest example possible. 
+To get some feeling of what we might be able to do with all this, we consider a 1D linear lasso regression. Namely, a model with only one parameter, maybe $y=w x$. Our loss function takes the form
+
+$$
+    \ell=\Vert w\boldsymbol{x}-\boldsymbol{y}\Vert_2+\frac{\lambda}{2s}(s^2w^2+1).
+$$
+
+The $w$ and $s$ derivatives are given by
+
+$$
+    \frac{\partial \ell}{\partial w}=w(2x^2+\lambda s)-2\boldsymbol{x}\cdot\boldsymbol{y}\;\;\Rightarrow\;\;w=\frac{2\boldsymbol{x}\cdot\boldsymbol{y}}{2x^2+\lambda s}.
+$$
+
+Since both $s$ and $\lambda$ are positive, we see that the regularization pushes the wights to smaller values. Now, we move to the $s$ equation
+
+$$
+    \frac{\partial \ell}{\partial s}=\frac{\lambda}{2}(w^2-s^{-2})\;\;\Rightarrow\;\;s^2=w^{-2}=\frac{(2x^2+\lambda s)^2}{4(\boldsymbol{x}\cdot\boldsymbol{y})^2}.
+$$
+
+)
+$$
