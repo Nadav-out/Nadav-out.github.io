@@ -86,13 +86,13 @@ with $\boldsymbol{w}^{(0)}=\mathbb{1}$, and $\boldsymbol{w}^{(i>0)}$ are the wei
 To further illustrate this approach, let's examine a regularized linear regression problem. In this case, we have
 
 $$
-    \ell^{(i)}=\frac{1}{2}\Vert X\boldsymbol{w}-\boldsymbol{y}\Vert_2+\frac{\lambda}{2}\boldsymbol{w}^TD^{(i-1)}\boldsymbol{w}
+    \ell^{(i)}=\frac{1}{2N}\Vert X\boldsymbol{w}-\boldsymbol{y}\Vert_2+\frac{\lambda}{2}\boldsymbol{w}^TD^{(i-1)}\boldsymbol{w},
 $$
 
-The normal equations are simply
+where $N$ is the number of samples. The normal equations are simply
 
 $$
-    \left(X^TX+\lambda D^{(i-1)}\right)\boldsymbol{w}^{(i)}=X^T\boldsymbol{y}\;\;,\;\; D^{(0)}=\mathbb{I}.
+    \left(X^TX+\lambda ND^{(i-1)}\right)\boldsymbol{w}^{(i)}=X^T\boldsymbol{y}\;\;,\;\; D^{(0)}=\mathbb{I}.
 $$
 
 
@@ -105,7 +105,7 @@ def lasso_sequence_ridge(X, y, lambda_, num_iterations):
     w = np.ones(N)  # initialize the weights
     w_history = []  # list to store the history of weights
 
-    # Scaleing lambda to match the Lasso definition used by scikit learn
+    # scale the lambda by the number of samples
     lambda_scaled = lambda_  * n_samples
     for i in range(num_iterations):
         D = np.diag(1/np.abs(w))  # diagonal matrix of absolute weights
