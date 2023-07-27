@@ -11,4 +11,10 @@ I'm thinking about Lasso regression, or more generally about regularization. Bas
 
 
 ## A simple realization
-I don't like the absolute value function, I usually prefer to think of it as $\vert x\vert=\sqrt{x^2}$. 
+I don't like the absolute value function, I usually prefer to think of it as $\vert w\vert=\sqrt{w^2}$. This simple way of rewriting $\vert w\vert$ had me thinking, is it possible to write a function whose minimum is at $\sqrt{w^2}$? Well, there are many, but the one I'm going to focus on today is this:
+
+$$
+    \Lambda(s,w)=\frac{1}{2}\left(s w^2+\frac{1}{s}\right).
+$$
+
+As long as we restrict the domain to $s>0$, the minimum of $\Lambda$ w.r.t.$s$ at fixed $w$ is when $\Lambda=\vert w\vert$. Why is this the one I want to focus on? Simply because it is a quadratic function in $w$.
