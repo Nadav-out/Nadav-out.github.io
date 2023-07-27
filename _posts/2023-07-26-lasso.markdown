@@ -1,0 +1,10 @@
+---
+layout: post
+title:  "Thoughts about Lasso Regression"
+date:   2023-07-26
+tags:   Lasso regression ML regularization
+math:   true
+# date:   2023-07-26 10:44:59 -0700
+categories: ML
+---
+I'm thinking about Lasso regression, or more generally about regularization. Basically, I wanted to see if there is a nice way to rephrase Lasso regularization as a quadratic convex problem. I think the answer is 'yes, but at what cost' (pun only intended in hindsight).
