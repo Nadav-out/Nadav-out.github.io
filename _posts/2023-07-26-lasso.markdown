@@ -28,7 +28,7 @@ $$
 Our brief discussion about the $\Lambda$ function leads us to understand that the Lasso regression can also be written as
 
 $$
-   \ell_{\rm lasso}(\boldsymbol{w},\boldsymbol{s})=\ell(\boldsymbol{w})+\frac{\lambda}{2}\left[\boldsymbol{w}^T{\rm diag}[\boldsymbol{s}]\boldsymbol{w}+{\rm diag}[\boldsymbol{s}]^{-1}\right],
+   \ell_{\rm lasso}(\boldsymbol{w},\boldsymbol{s})=\ell(\boldsymbol{w})+\frac{\lambda}{2}\left[\boldsymbol{w}^T{\rm diag}[\boldsymbol{s}]\boldsymbol{w}+\sum_{i}s_i^{-1}\right],
 $$
 
 where $\boldsymbol{s}$ is a vector of Lagrange multipliers, of the same dimension as $\boldsymbol{w}$. Effectively, we have doubled the weight space. So, what's the benefit? The dependence on $\boldsymbol{w}$ is now quadratic, and the gradients with respect to both $\boldsymbol{w}$ and $\boldsymbol{s}$ are straightforward.
