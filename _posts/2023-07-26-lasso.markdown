@@ -7,7 +7,7 @@ math:   true
 # date:   2023-07-26 10:44:59 -0700
 categories: ML
 ---
-I've been thinking about Lasso regression, and more specifically, about regularization. I wanted to see if there was a way to reformulate Lasso regularization as a quadratic convex problem. The answer seems to be, 'yes, but at what cost?' (pun only intended in hindsight).
+I've been thinking about Lasso regression lately, and more specifically, about regularization. I wanted to see if there was a way to reformulate Lasso regularization as a quadratic convex problem. The answer seems to be, 'yes, but at what cost?' (pun only intended in hindsight).
 
 
 ## A Simple Observation
@@ -37,6 +37,8 @@ $$
     \boldsymbol{\nabla}_{\boldsymbol{w}}\ell_{\rm lasso}=\boldsymbol{\nabla}_{\boldsymbol{w}}\ell+\lambda\,{\rm diag}[\boldsymbol{s}]\boldsymbol{w}\;\;,\;\;\frac{\partial\ell_{\rm lasso}}{\partial s_i}=w_i^2-s_i^{-2}
 $$
 
+Keeping in mind that $s_i>0$, it is also clear that $\ell_{\rm lasso}$ is convex, given that $\ell$ is. Note that to circumvent the $s>0$ restriction, we may define $s=e^\sigma$. Minimizing $\ell_{\rm lasso}(\boldsymbol{w},\exp\boldsymbol{\sigma})$ with respect to $\boldsymbol{\sigma}$ over the reals will also give the desired $L_1$ regulator.
+
 ### The Simplest Example Possible - 1D Linear Regression
 To illustrate what we might achieve with this new perspective, let's consider a 1D linear Lasso regression, where our model has only one parameter, say $y=w x$. The loss function would be
 
@@ -44,7 +46,7 @@ $$
     \ell=\frac{1}{2}\Vert w\boldsymbol{x}-\boldsymbol{y}\Vert_2+\frac{\lambda}{2s}(s^2w^2+1).
 $$
 
-The derivatives for $w$ and $s$ are given by
+The derivatives for $w$ is given by
 
 $$
     \frac{\partial \ell}{\partial w}=w(x^2+\lambda s)-\boldsymbol{x}\cdot\boldsymbol{y}\;\;\Rightarrow\;\;w=\frac{\boldsymbol{x}\cdot\boldsymbol{y}}{x^2+\lambda s}.
@@ -68,7 +70,8 @@ $$
     w^{(i+1)}=\frac{\boldsymbol{x}\cdot\boldsymbol{y}}{x^2+\lambda\vert w^{(i)}\vert^{-1}}.
 $$
 
-By setting $w^{(0)}=1$, the first iteration ($w^{(1)}$) gives the Ridge regression result. This insight allows us to interpret Lasso regression as a sequence of modified Ridge regression problems, as we next study in more depth.
+The convexity of the loss function assures the convergence of this process.
+By further setting $w^{(0)}=1$, the first iteration ($w^{(1)}$) gives the Ridge regression result. This insight allows us to interpret Lasso regression as a sequence of modified Ridge regression problems, as we next study in more depth.
 
 
 
@@ -79,7 +82,7 @@ $$
     \ell^{(i)}\left(\boldsymbol{w},\boldsymbol{w}^{(i-1)}\right)=\ell(\boldsymbol{w})+\frac{\lambda}{2}\boldsymbol{w}^TD[\boldsymbol{w}^{(i-1)}]\boldsymbol{w}\;\;,\;\;D[\boldsymbol{w}]={\rm diag}\left[\vert w_1\vert^{-1} ,\vert w_2\vert^{-1} ,...,\vert w_N\vert^{-1} \right]
 $$
 
-with $\boldsymbol{w}^{(0)}=\mathbb{1}$, and $\boldsymbol{w}^{(i>0)}$ are the weights minimizing $\ell^{(i)}$.
+with $\boldsymbol{w}^{(0)}=\mathbb{1}$, and $\boldsymbol{w}^{(i>0)}$ are the weights minimizing $\ell^{(i)}$. Repeating this iteratively, will eventually converge to the same minimum as the Lasso regression.
 
 
 ### The Next Simplest Example Possible - linear regression
@@ -96,7 +99,7 @@ $$
 $$
 
 
-To investigate this numerically, I have set up a simple Python experiment using the California Housing dataset from Scikit-learn. I applied the Lasso sequence Ridge function for a specific $\lambda$, and tracked the evolution of each weight over iterations. The full Python notebook is available on [GitHub](https://github.com/Nadav-out/Blog_related/blob/main/Lasso.ipynb), but the code snippet below provides an overview of the method.
+In the near future, I will follow up on this post with a more detailed discussion of numerically implementing this method in some more sophisticated settings, where analytical solutions can't get us far. But for the time being, to investigate this numerically, I have set up a simple Python experiment using the California Housing dataset from Scikit-learn. I applied the Lasso sequence Ridge function for a specific $\lambda$, and tracked the evolution of each weight over iterations. The full Python notebook is available on [GitHub](https://github.com/Nadav-out/Blog_related/blob/main/Lasso.ipynb), but the code snippet below provides an overview of the method.  
 
 
 ```python
