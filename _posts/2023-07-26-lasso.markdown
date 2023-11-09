@@ -2,7 +2,7 @@
 layout: post
 title:  "Thoughts about Lasso Regression"
 date:   2023-07-26
-tags:   Lasso regression ML regularization
+tags:   lasso regression regularization
 math:   true
 # date:   2023-07-26 10:44:59 -0700
 categories: ML

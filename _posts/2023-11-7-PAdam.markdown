@@ -1,0 +1,214 @@
+---
+layout: post
+title:  "Introducing PAdam - Adam optimzer for any p-norm"
+date:   2023-11-7
+tags:   theory regularization lasso ridge optimization sparsity adam
+math:   true
+categories: ML
+---
+
+In this post I'm going to introduce `PAdam`, my new variant of Adam optimizer which allows for any $p$-norm to be used as a regularizer. The work on `PAdam` isn't complete yet and much experimentation is still required. However, the preliminary results seem worthy of mention. I hope to publish more mature results as a research paper in the upcoming months. 
+
+
+#### Overview
+`PAdam` originated from a question I asked [in a previous post]({% link _posts/2023-07-26-lasso.markdown%}), about interpreting the absolute value function as the minimum of a 2D convex function. In the previous post we focused on the following specific function
+
+$$
+    \vert x\vert=\frac{1}{2}\min_{s>0}\left[s x^2+\frac{1}{s}\right].
+$$
+
+Today we are going to somewhat generalize. We define 
+
+$$
+    \Lambda_p(x,s)=\frac{1}{2}\left[p s x^2+(2-p)s^{p/(p-2)}\right].
+$$
+
+It can easily be seen that or $p<2$ and $s>0$, $\Lambda_p$ possesses a unique minimum, given by $\min_{s>0}\Lambda_p(x,s)=\vert x\vert^p$. Our regularization scheme works as follows: We start with the 'unregularized' loss $\ell_0(\boldsymbol{w})$, for some set of weights $\boldsymbol{w}$, and regulate it with the term 
+
+<div id="eq_Lambda_p">
+$$
+    \lambda\Lambda(\boldsymbol{w},\boldsymbol{s})=\frac{\lambda}{2}\sum_{i}\left[ps_iw_i^2+(2-p)s_i^{p/(p-2)}\right]. \tag{1}
+$$
+</div>
+
+In the equation above, $\boldsymbol{s}$ represents a set of auxiliary weights, corresponding in size to the weight set $\boldsymbol{w}$.
+
+If we now treat $\boldsymbol{s}$ together with $\boldsymbol{w}$ as our new set of learnable parameters, the convexity of $\Lambda_p$ ensures that the set of weights optimizing $\ell_0+\lambda\Lambda_p$ is the same as the one optimizing $\ell_0+\lambda\Vert \boldsymbol{w}\Vert_p^p$. The rest of this post is dedicated to our suggested implementation of this modified optimization problem, and organized in the following sections:
+
+1. A Lightning Introduction to Proximal Operators and Proximal Gradient Methods.
+2. Proximal Gradient Descent with $\Lambda_p$ Regularization and its Adiabatic Limit.
+3. The Adiabatic `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST.
+4. Future Directions and Open Questions.
+
+Let's dive in.
+
+## Proximal Operators
+The [proximal operator](https://en.wikipedia.org/wiki/Proximal_operator) of a convex function $f(w)$ is a functional defined as
+
+$$
+    {\rm Prox}_f(w)=\underset{u}{\operatorname{argmin}}\left\{f(u)+\frac{1}{2}\Vert w-u\Vert_2^2\right\}.
+$$
+
+The proximal operator is a central tool in convex optimization. Assuming we wish to minimize $h(w)=g(w)+f(w)$, where both $g$ and $f$ are convex, it can be demonstrated that the following two statements are equivalent for any $\eta>0$
+
+$$
+    w^*={\rm Prox}_{\eta f}\left[w^*-\eta g'(w^*)\right]\;\;\Leftrightarrow\;\;w^*=\underset{w}{\operatorname{argmin}}h(w).
+$$
+
+To get convinced of this equivalence, it is enough to recall that for convex function, the gradient vanishes only at the minimum. Using this fact and the definition of the proximal operator complete the proof.
+
+The idea behind [Proximal gradient methods for learning](https://en.wikipedia.org/wiki/Proximal_gradient_methods_for_learning) is that, thanks to the convexity of $g$ and $f$, we can solve the above equation for $w^*$ iteratively. Identifying $\eta$ as the learning rate, the proximal gradient descent (GD) step is given by
+
+$$
+    w^{(t+1)}={\rm Prox}_{\eta f}\left[w^{(t)}-\eta g'(w^{(t)})\right].
+$$
+
+### The proximal operator for the $L_2$ norm
+
+For any $p$-norm of a vector, the proximal operator for each component can be expressed independently of the others. The discussion on single variable functions is thus sufficient, as we can treat each component separately. A lot of the discussion to follow relies on the proximal operator for the  $L_2$ norm
+
+<div id="eq_prox_ridge">
+$$
+    {\rm Prox}_{\frac{\eta\lambda}{2}\Vert\cdot\Vert_2^2}(\boldsymbol{w})=\underset{\boldsymbol{u}}{\operatorname{argmin}}\left\{\frac{\lambda\eta}{2}\Vert \boldsymbol{u}\Vert_2^2+\frac{1}{2}\Vert \boldsymbol{w}-\boldsymbol{u}\Vert_2^2\right\}=\frac{\boldsymbol{w}}{1+\eta\lambda}. \tag{2}
+$$
+</div>
+
+Therefore, when $L_2$ regularization is included in the loss fucntion $\ell_0(\boldsymbol{w})$, the weights update is given by
+
+$$
+    \boldsymbol{w}^{(t+1)}=\left[\boldsymbol{w}^{(t)}-\eta\lambda\boldsymbol{\nabla}\ell_0(\boldsymbol{w}^{(t)})\right](1+\eta\lambda)^{-1}=
+$$
+
+$$
+    =\left[\boldsymbol{w}^{(t)}-\eta\lambda\boldsymbol{\nabla}\ell_0(\boldsymbol{w}^{(t)})\right](1-\eta\lambda)+\mathcal{O}\left(\eta^2\lambda^2\right).
+$$
+
+In the second line we have expanded to leading order in $\eta\lambda$, assuming it is much smaller than $1$, as is usually the case. Under this assumption, we recover the familiar concept of weight decay. In subsequent sections, we will discuss scenarios where the effective value of $\lambda$ can get very large. In such cases, to avoid exploding gradients, it becomes crucial that we use results derived from the proximal operator.
+
+## A simple proximal gradient for any $p<2$-norm
+The proximal operator for the $L_1$ (lasso) regularization, know as the _soft thresholding operator_, is widely used in the literature (and already made an appearance in a [previous post]({%link _posts/2023-11-2-generalization_II.markdown%})). The proximal operator for various other specific values of $p<2$ norms has also been studied in the literature, for example in [[1]](#ref1),[[2]](#ref2), but the resulting operators are quite hard to work with. Partially for that reason, approximated operators were also devised, for example in [[3]](#ref3). While giving pretty good results, these operators didn't improve much the simplicity of mathematical expressions.
+
+
+The main result we present in this post is, a much cleaner, exact implementation of any $p<2$ norm regularization. It works as follows. Instead of minimizing the $p$-norm regularized loss $\ell(\boldsymbol{w})=\ell_0(\boldsymbol{w})+\lambda \Vert \boldsymbol{w}\Vert_2^2$ over $\boldsymbol{w}$, we suggest minimizing $\ell(\boldsymbol{w},\boldsymbol{s})=\ell_0(\boldsymbol{w})+\lambda\Lambda_p(\boldsymbol{w},\boldsymbol{s})$ over both $\boldsymbol{w}$ and $\boldsymbol{s}$. We recall that $\Lambda_p$ was chosen such that $\min_{\boldsymbol{s}} \Lambda_p(\boldsymbol{w},\boldsymbol{s})=\Vert \boldsymbol{w}\Vert_p^p$. Therefore, the vector $\boldsymbol{w}^*$ minimizing $\ell(\boldsymbol{w},\boldsymbol{s})$, will also minimize the original loss, $\ell(\boldsymbol{w})$. In the next subsections we describe how this modified loss is minimized in a GD based approach.
+
+
+### The pseudo proximal gradient step
+At each GD update of the weights $\boldsymbol{w}$, $\boldsymbol{s}$ is being held fixed. The $\boldsymbol{w}$ dependent piece of $\Lambda_p$ in [Eq.[1]](#eq_Lambda_p), namely $(p/2)\sum_i s_iw_i^2$, acts basically as a modified $L_2$ regulator for $\boldsymbol{w}$. Following the discussion in the previous section, instead of including $\Lambda_p$ in the gradient of $\ell$, we will make use of the proximal gredient method. The proximal operator of $\Lambda_p$ at fixed $\boldsymbol{s}$ is a simple generalization of to the $L_2$ proximal operator [Eq.[2]](#eq_prox_ridge), which is given by
+
+$$
+    {\rm Prox}_{\lambda\Lambda_p(\cdot,\boldsymbol{s})}(\boldsymbol{w})=(1+p\lambda\mathrm{diag}[\boldsymbol{s}])^{-1}\boldsymbol{w},
+$$
+
+where $\mathrm{diag}[\boldsymbol{s}]$ is a diagonal matrix with the vector $\boldsymbol{s}$ on its diagonal.  Denoting by $\boldsymbol{g}^{(t)}$ the gradient of $\ell_0$ w.r.t. $\boldsymbol{w}$, the proximal gradient step is now given by
+
+$$
+    {w}_i^{(t+1)}=\frac{w_i^{(t)}-g_i^{(t)}}{1+p\lambda s_{i}^{(t)}}\,.
+$$
+
+So far we haven't discussed the dynamics of $\boldsymbol{s}$. Depending on how $\boldsymbol{s}$ learns, we can expect quite a wide range of optimization dynamics. Aspects of such $\boldsymbol{s}$ dynamics are touched upon in the closing sections of this post, deeper discussion is differed to future studies. Currently, we are only going to use the fact that at each time step setting ${s}_i^{(t)}=\left\vert w_i^{(t)}\right\vert^{p-2}$ minimizes $\Lambda_p$ (and therefore also  $\ell$). In fancy words, we can say that we work in the limit where $\boldsymbol{s}$ learns much faster than that of $\boldsymbol{w}$. An even fancier physicist would say that $\boldsymbol{w}$ changes adiabaticaly. This is the reason we will refer to this as the adiabatic limit of our problem. With all this in mind, the resulting final weight update rule is given by
+
+<div id="eq_GD_update">
+$$
+    \boxed{w_i^{(t+1)}=\frac{\left\vert w_i^{(t)}\right\vert^{2-p}}{\left\vert w_i^{(t)}\right\vert^{2-p}+\eta p\lambda}\left(w_i^{(t)}-\eta g_i^{(t)}\right)\;.\;} \tag{3}
+$$
+</div>
+
+A few interesting observations. 
+1. Note that the above weight update can not be understood as a traditional proximal operator acting on the weights. It is a function of both $w$ and $w-\eta g$, not just the latter.
+2. We see that once $\vert w_i\vert^{p-2}$ drops below $p\eta\lambda$, the weight is steadily pushed towards 0. When $\vert w_i\vert^{p-2}\gg p\eta\lambda$ we retrieve the unregulated GD.
+
+
+### A toy example
+We close this section with a nice example of how of the weights evolve in time under different choices of $p$. We will focus on a very simple 2D loss function with a clear, but non-trivial surface of minimal loss
+
+$$
+    \ell_0(w_1,w_2)=\frac{1}{4}\left(w_1^2+w_2^2-1\right)^2.
+$$
+
+This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my particle physics background to refer to it as _the Higgs Potential_. Below we show the evolution of the GD evolution of the weights in this loss surface, starting from $(w_1,w_2)=(0.2,0.18)$. We use a large learning rate $\eta=0.7$ and study the non-regulated case, and the $p=0.5$ case and $p=1$ case with $\lambda=0.1$.
+
+![Desktop View](/assets/images/higgs.png){: width="972" height="589" }
+_Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. __Left:__ The evolution of the loss. __Right:__ The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
+
+## PAdam: the $L_p$ Adam Optimizer
+At this point, we have all the ingredients we need to implement the $L_p$ `Adam` optimizer. The only modification from the previous section, is that instead of the gradient $g$ in the weight update rule [Eq.[3]](#eq_GD_update), we will use the `Adam` update rule. The full `PAdam` step is thus given by:
+
+
+|------|--------------------------------------------------------------------------------------------------------|
+| 1    | $g_t \gets \nabla \ell_0$                                                                              |
+| 2    | $m_t \gets \beta_1 \cdot m_{t-1} + (1 - \beta_1) \cdot g_t$                                            |
+| 3    | $v_t \gets \beta_2 \cdot v_{t-1} + (1 - \beta_2) \cdot g_t^2$                                          |
+| 4    | $\hat{m}_t \gets m_t / (1 - \beta_1^t)$                                                                |
+| 5    | $\hat{v}_t \gets v_t / (1 - \beta_2^t)$                                                                |
+| 6    | $\hat{w}&#95;t \gets w&#95;{t-1} - \eta \hat{m}&#95;t / (\sqrt{\hat{v}&#95;t} + \epsilon)$   |
+| 7    | $w_t \gets \vert w_t\vert^{2-p}\hat{w}_t/(\vert w_t\vert^{2-p}+\eta p\lambda)$       |
+
+Steps 1--6 are the standard `Adam` update rule, while step 7 is the $L_p$ norm weight update rule. This modification is very similar to the `AdamW` version of Adam, only here the 'weight decay' step is replaced by our $L_p$ norm step. The `PyTorch` implementation I'm about to suggest is not the most esthetic one, nor is it the most efficient one. The philosophy is that currently, for simplicity we will inherent the `Adam` optimizer class, and only add step 7 after the optimizer step. This way we avoid rewriting the entire optimizer, which is highly optimized, and only add one step which is fairly cheap.  Note however that step 7 in the algorithm makes use of the weight before the `Adam` step, $\vert w_t\vert$. To implement this we will have to store all the parameters before the optimizer step, and use them to decay the parameters after the step was taken. One could in principal use $\vert\hat{w}_t\vert$, which would be slightly more memory efficient, and cleaner to code, but this seems to lead to inferior results. With all this in mind. Here's `PAdam`
+
+```python
+class PAdam(torch.optim.Adam):
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-2, p_norm=1, *args, **kwargs):
+        super(PAdam, self).__init__(params, lr=lr, betas=betas, eps=eps, weight_decay=0, *args, **kwargs)
+        self.p_norm = p_norm
+
+    @torch.no_grad()  # ensure no gradients are computed in this method
+    def step(self, closure=None):
+        # Store the old params
+        old_params = []
+        for group in self.param_groups:
+            old_params.append({param: param.data.clone() for param in group['params'] if param.grad is not None})
+
+        # Perform the standard Adam step
+        loss = super(PAdam, self).step(closure)
+
+        # Perform the PAdam step
+        for group, old_group in zip(self.param_groups, old_params):
+            for param in group['params']:
+                if param.grad is None:
+                    continue
+
+                # old parameters and the decay factor
+                param_old = old_group[param]
+                X = param_old.abs()**(2 - self.p_norm)
+                update_term = X / (X + self.p_norm * group['lr'] * group['weight_decay'])
+
+                # Update the parameters
+                param.data.mul_(update_term)
+
+        return loss
+```
+
+
+## Future directions and open questions
+To finish off, I want to present some directions I wish to pursuit in the near future, some of which will be included in an upcoming paper. 
+
+Clearly one of this first things to do is to run larger, more complex, experiments. In the near future I will finish and possibly update this post with results from both ResNet trained on CIFAR, and hopefully will also a small transformer based model.
+
+### Large weight regularization
+One thing to note about $L_{p<2}$ norms is that the regulator is stronger for smaller weights and weaker for larger ones. This is in contrast with the $L_{p>2}$ norm, which regulates larger weights more than smaller ones. Regulating only small weights seems problematic, as it will not address one of the core reasons regularization is used in the first place, namely, to avoid 'dead neurons' by penalizing large weights. Here are a few thoughts on how to regulate large weights in a `PAdam`-like optimizer.
+
+__Elastic net-like regularization__:
+Much like elastic net [[4]](#ref4) is a combination of $L_1$ and $L_2$ regularization, we can combine $L_2$ regularization with our suggested $p$-norm weight update. This is probably the simplest extension and the modified weight update rule will now be
+
+$$
+    w_i^{(t+1)}=\frac{\left\vert w_i^{(t)}\right\vert^{2-p}}{\left\vert w_i^{(t)}\right\vert^{2-p}(1+\eta\lambda_2)+\eta p\lambda_p}\left(w_i^{(t)}-\eta g_i^{(t)}\right)
+$$
+
+This one is option is already included in the current version of `PAdam`, and seem to help at the early phases of learning.
+
+__$p$-scheduling__: Just like any other hyperparameter, $p$ can be held fixed, or change its value as training evolve. Changing $p$ gradually from $2$ to it final $p<2$ value, will allow the network to first settle toward a desired minimum, and only then let  the $p<2$-norm 'look' for sparser solutions. One advantage of $p$-scheduling over the elastic-net approach, is that weights that are initialized below the $p<2$-norm threshold will not get stuck at 0.
+
+__Departure from the adiabatic limit__: One last possibility, is to make $\boldsymbol{s}$ a dynamical variable again. Initializing $\boldsymbol{s}=\mathbb{1}$ and forcing it learn slower than $\boldsymbol{w}$, will allow the network to initially learn in an $L_{2}$-like manner, but then slowly transition to the $L_{p<2}$ regime. This enjoys similar advantages to $p$ scheduling, but is more complex to implement, and will require some memory and computation overhead (though likely negligible). 
+
+
+## References
+
+[1]: <a name="ref1"></a>[Xu, Zongben et al. "$L_{1/2}$ regularization: a thresholding representation theory and a fast solver"](https://doi.org/10.1109/TNNLS.2012.2197412)
+
+
+[2]: <a name="ref2"></a>[Chen, F., Shen, L. and Suter, B.W. "Computing the proximity operator of the $\ell_p$ norm with $0<p<1$"](https://doi.org/10.1049/iet-spr.2015.0244)
+
+[3]: <a name="ref3"></a>[O'Brien, Cian and Plumbley, Mark D. "Inexact Proximal Operators for $\ell_{p}$-Quasinorm Minimization"](https://doi.org/10.1109/ICASSP.2018.8462524)
+
+[4]: <a name="ref4"></a>[Hui Zou, Trevor Hastie. "Regularization and Variable Selection Via the Elastic Net"](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
+
