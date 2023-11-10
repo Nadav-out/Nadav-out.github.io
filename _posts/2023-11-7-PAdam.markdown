@@ -127,8 +127,8 @@ $$
 
 This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my particle physics background to refer to it as _the Higgs Potential_. Below we show the evolution of the GD evolution of the weights in this loss surface, starting from $(w_1,w_2)=(0.2,0.18)$. We use a large learning rate $\eta=0.7$ and study the non-regulated case, and the $p=0.5$ case and $p=1$ case with $\lambda=0.1$.
 
-![Desktop View](/assets/images/Higgs.png){: width="972" height="589" }
-_Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. __Left:__ The evolution of the loss. __Right:__ The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
+![Desktop View](/assets/images/higgs.png){: width="972" height="589" }
+_Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. **Left:** The evolution of the loss. **Right:** The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
 
 ## PAdam: the $L_p$ Adam Optimizer
 At this point, we have all the ingredients we need to implement the $L_p$ `Adam` optimizer. The only modification from the previous section, is that instead of the gradient $g$ in the weight update rule [Eq.[3]](#eq_GD_update), we will use the `Adam` update rule. The full `PAdam` step is thus given by:
