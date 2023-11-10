@@ -127,7 +127,7 @@ $$
 
 This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my particle physics background to refer to it as _the Higgs Potential_. Below we show the evolution of the GD evolution of the weights in this loss surface, starting from $(w_1,w_2)=(0.2,0.18)$. We use a large learning rate $\eta=0.7$ and study the non-regulated case, and the $p=0.5$ case and $p=1$ case with $\lambda=0.1$.
 
-![Desktop View](/assets/images/higgs.png){: width="972" height="589" }
+![Desktop View](/assets/images/Higgs.png){: width="972" height="589" }
 _Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. __Left:__ The evolution of the loss. __Right:__ The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
 
 ## PAdam: the $L_p$ Adam Optimizer
@@ -147,11 +147,12 @@ Steps 1--6 are the standard `Adam` update rule, while step 7 is the $L_p$ norm w
 
 ```python
 class PAdam(torch.optim.Adam):
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-2, p_norm=1, *args, **kwargs):
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, lambda_p=1e-2, p_norm=1, *args, **kwargs):
         super(PAdam, self).__init__(params, lr=lr, betas=betas, eps=eps, weight_decay=0, *args, **kwargs)
         self.p_norm = p_norm
+        self.lambda_p = lambda_p
 
-    @torch.no_grad()  # ensure no gradients are computed in this method
+    @torch.no_grad()
     def step(self, closure=None):
         # Store the old params
         old_params = []
@@ -167,10 +168,10 @@ class PAdam(torch.optim.Adam):
                 if param.grad is None:
                     continue
 
-                # old parameters and the decay factor
+                # Use old parameters in the decay factor
                 param_old = old_group[param]
                 X = param_old.abs()**(2 - self.p_norm)
-                update_term = X / (X + self.p_norm * group['lr'] * group['weight_decay'])
+                update_term = X / (X + self.p_norm * group['lr'] * self.lambda_p)
 
                 # Update the parameters
                 param.data.mul_(update_term)
