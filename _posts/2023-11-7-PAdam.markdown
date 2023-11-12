@@ -7,7 +7,7 @@ math:   true
 categories: ML
 ---
 
-In this post I'm going to introduce `PAdam`, my new variant of Adam optimizer which allows for any $p$-norm to be used as a regularizer. The work on `PAdam` isn't complete yet and much experimentation is still required. However, the preliminary results seem worthy of mention. I hope to publish more mature results as a research paper in the upcoming months. 
+In this post I'm going to introduce `PAdam`, my new variant of Adam optimizer which allows for any $p$-norm to be used as a regularizer. The work on `PAdam` isn't complete yet and much experimentation is still required. However, the preliminary results seem worthy of mention. I hope to publish more mature results as a research paper in the upcoming months. The github repository for `PAdam` can be found [here](https://github.com/nadav-out/padam).
 
 
 #### Overview
@@ -35,10 +35,12 @@ In the equation above, $\boldsymbol{s}$ represents a set of auxiliary weights, c
 
 If we now treat $\boldsymbol{s}$ together with $\boldsymbol{w}$ as our new set of learnable parameters, the convexity of $\Lambda_p$ ensures that the set of weights optimizing $\ell_0+\lambda\Lambda_p$ is the same as the one optimizing $\ell_0+\lambda\Vert \boldsymbol{w}\Vert_p^p$. The rest of this post is dedicated to our suggested implementation of this modified optimization problem, and organized in the following sections:
 
-1. A Lightning Introduction to Proximal Operators and Proximal Gradient Methods.
-2. Proximal Gradient Descent with $\Lambda_p$ Regularization and its Adiabatic Limit.
-3. The Adiabatic `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST.
-4. Future Directions and Open Questions.
+1. [A Lightning Introduction to Proximal Operators and Proximal Gradient Methods.](#proximal-operators)
+2. [Proximal Gradient Descent with $\Lambda_p$ Regularization and its Adiabatic Limit.](#a-simple-proximal-gradient-for-any--norm)
+3. [The `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST](#padam-the-adam-optimizer).
+4. [Future Directions and Open Questions.](#future-directions-and-open-questions)
+
+A reader less interested in the mathematical details of the algorithm, and more interested in the practical implementation and performance, can skip directly to section 3. 
 
 Let's dive in.
 
@@ -125,7 +127,7 @@ $$
     \ell_0(w_1,w_2)=\frac{1}{4}\left(w_1^2+w_2^2-1\right)^2.
 $$
 
-This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my particle physics background to refer to it as _the Higgs Potential_. Below we show the evolution of the GD evolution of the weights in this loss surface, starting from $(w_1,w_2)=(0.2,0.18)$. We use a large learning rate $\eta=0.7$ and study the non-regulated case, and the $p=0.5$ case and $p=1$ case with $\lambda=0.1$.
+This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my particle physics background to refer to it as _the Higgs Potential_. Below we show the evolution of the GD evolution of the weights in this loss surface, starting from $(w_1,w_2)=(0.2,0.18)$. We use a large learning rate $\eta=0.7$ and study the non-regulated case, and the $p=0.5$ case and $p=1$ case with $\lambda=0.1$. The code to reproduce this figure can be found in the accompanying [Jupyter notebook](https://github.com/Nadav-out/Blog_related/blob/main/PAdam.ipynb).
 
 ![Desktop View](/assets/images/higgs.png){: width="972" height="589" }
 _Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. **Left:** The evolution of the loss. **Right:** The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
@@ -188,10 +190,10 @@ We trained the network for 400 epochs, once with `AdamW` optimizer, for $\lambda
 ![Desktop View](/assets/images/fashion_padam_curves.png){: width="972" height="589" }
 _Loss and accuracy curves for `AdamW` and `PAdam`, both resulted in very similar results._
 
-The more interesting result, is the level of sparsity `PAdam` obtained. In this specific examples, `PAdam` pushed $79.7\%$ of the weights to 0,  whereas `AdamW` pushed only about $6.3\%$ below $10^{-9}$. This is a significant difference, which possibly could lead to reduced inference time, if treated correctly. Below we show the CDF of the absolute values of the weights, which shows nicely that for `PAdam`, practically all the non-vanishing weights are larger than $(p\lambda)^{1/(2-p)}\simeq6.6\times 10^{-3}$, which is the scale below which we expect to see asupression (c.f. [Eq.[3]](#eq_GD_update)).
+The more interesting result, is the level of sparsity `PAdam` obtained. In this specific examples, `PAdam` pushed $83.63\%$ of the weights to 0,  whereas `AdamW` pushed only about $6.3\%$ below $10^{-9}$. This is a significant difference, which possibly could lead to reduced inference time, if treated correctly. Below we show the CDF of the absolute values of the weights, which shows nicely that for `PAdam`, practically all the non-vanishing weights are larger than $(p\lambda)^{1/(2-p)}\simeq6.6\times 10^{-3}$, which is the scale below which we expect to see a supression (c.f. [Eq.[3]](#eq_GD_update)).
 
-![Desktop View](/assets/images/fashion_padam_cdf.png){: width="600" height="589" }
-_Cumulative Distribution Function of the magnitude of weights for both `AdamW` and `PAdam`. The gray dashed line represent the value of $(p\lambda)^{1/(2-p)}$, below which `PAdam` is expected to suppress the weights._
+![Desktop View](/assets/images/fashion_padam_pdf_cdf.png){: width="972" height="589" }
+_Probability Density Function and Cumulative Density Function of the magnitude of weights for both `AdamW` and `PAdam`. The gray dashed line ont the right panel represent the value of $(p\lambda)^{1/(2-p)}$, below which `PAdam` is expected to suppress the weights._
 
 
 ## Future directions and open questions
