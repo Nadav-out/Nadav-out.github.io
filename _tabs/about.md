@@ -6,7 +6,7 @@ order: 4
 
 Hi! 
 
-My name is Nadav (Joseph) Outmezguine. I'm Postdoc at the Berkeley Center for Theoretical Physics, joint center between UC Berkeley and Lawrence Berkeley National Lab.
+My name is Nadav (Joseph) Outmezguine. I'm a Postdoc at the Berkeley Center for Theoretical Physics; a joint center between UC Berkeley and Lawrence Berkeley National Lab.
 
 My Work is somewhere on the border between theoretical particle physics, astrophysics, and cosmology. The big question I'm trying to answer is _What is Dark Matter, and how will we find it?_
 

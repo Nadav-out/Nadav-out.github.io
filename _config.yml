@@ -23,7 +23,7 @@ title: New Paths # the main title
 tagline: Nadav is thinking and writing about things # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
-  A minimal, responsive and feature-rich Jekyll theme for technical writing.
+  Nadav Outmezguines blog: a physicists view on ML
 
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
 url: "https://nadav-out.github.io"
@@ -45,7 +45,7 @@ social:
     - https://github.com/username # change to your github homepage
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
-    # - https://www.linkedin.com/in/username
+    - https://www.linkedin.com/in/nadavo
 
 google_site_verification: # fill in to your verification string
 

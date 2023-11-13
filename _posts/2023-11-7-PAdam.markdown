@@ -40,7 +40,7 @@ If we now treat $\boldsymbol{s}$ together with $\boldsymbol{w}$ as our new set o
 3. [The `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST](#padam).
 4. [Future Directions and Open Questions.](#future-directions-and-open-questions)
 
-A reader less interested in the mathematical details of the algorithm, and more interested in the practical implementation and performance, can skip directly to section 3. 
+A reader less interested in the mathematical details of the algorithm, and more interested in the practical implementation and performance, can skip directly to [section 3](#padam). 
 
 Let's dive in.
 
@@ -121,7 +121,7 @@ A few interesting observations.
 
 
 ### A toy example
-We close this section with a nice example of how of the weights evolve in time under different choices of $p$. We will focus on a very simple 2D loss function with a clear, but non-trivial surface of minimal loss
+We close this section with a nice example showing the weights' evolution in a specific loss, under different choices of $p$. We will focus on a very simple 2D loss function with a clear, but non-trivial surface of minimal loss
 
 $$
     \ell_0(w_1,w_2)=\frac{1}{4}\left(w_1^2+w_2^2-1\right)^2.
