@@ -36,8 +36,8 @@ In the equation above, $\boldsymbol{s}$ represents a set of auxiliary weights, c
 If we now treat $\boldsymbol{s}$ together with $\boldsymbol{w}$ as our new set of learnable parameters, the convexity of $\Lambda_p$ ensures that the set of weights optimizing $\ell_0+\lambda\Lambda_p$ is the same as the one optimizing $\ell_0+\lambda\Vert \boldsymbol{w}\Vert_p^p$. The rest of this post is dedicated to our suggested implementation of this modified optimization problem, and organized in the following sections:
 
 1. [A Lightning Introduction to Proximal Operators and Proximal Gradient Methods.](#proximal-operators)
-2. [Proximal Gradient Descent with $\Lambda_p$ Regularization and its Adiabatic Limit.](#a-simple-proximal-gradient-for-any--norm)
-3. [The `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST](#padam-the-adam-optimizer).
+2. [Proximal Gradient Descent with $\Lambda_p$ Regularization and its Adiabatic Limit.](#simple-proximal-gradient)
+3. [The `PAdam` Algorithm: A 0-th Order PyTorch Implementation and Experiments on FashionMNIST](#padam).
 4. [Future Directions and Open Questions.](#future-directions-and-open-questions)
 
 A reader less interested in the mathematical details of the algorithm, and more interested in the practical implementation and performance, can skip directly to section 3. 
@@ -87,7 +87,7 @@ $$
 
 In the second line we have expanded to leading order in $\eta\lambda$, assuming it is much smaller than $1$, as is usually the case. Under this assumption, we recover the familiar concept of weight decay. In subsequent sections, we will discuss scenarios where the effective value of $\lambda$ can get very large. In such cases, to avoid exploding gradients, it becomes crucial that we use results derived from the proximal operator.
 
-## A simple proximal gradient for any $p<2$-norm
+## A simple proximal gradient for any $p<2$-norm {#simple-proximal-gradient}
 The proximal operator for the $L_1$ (lasso) regularization, know as the _soft thresholding operator_, is widely used in the literature (and already made an appearance in a [previous post]({%link _posts/2023-11-2-generalization_II.markdown%})). The proximal operator for various other specific values of $p<2$ norms has also been studied in the literature, for example in [[1]](#ref1),[[2]](#ref2), but the resulting operators are quite hard to work with. Partially for that reason, approximated operators were also devised, for example in [[3]](#ref3). While giving pretty good results, these operators didn't improve much the simplicity of mathematical expressions.
 
 
@@ -132,7 +132,7 @@ This loss has a minimum along the circle $w_1^2+w_2^2=1$. I'm conditioned by my 
 ![Desktop View](/assets/images/higgs.png){: width="972" height="589" }
 _Numerical gradient decent in the 'Higgs Potential' for the unregulated case, and using $L_p$ norms. **Left:** The evolution of the loss. **Right:** The trajectories of the weight on the loss surface in the presence of different regularizations. We see in both the $p=1/2$ and $p=1$ case that indeed one of the weights is pushed to 0. In both cases, we also see that the weights first try to get to the minimal loss surface (a circle of radius 1), and only then travel towards the sparse solution._
 
-## PAdam: the $L_p$ Adam Optimizer
+## PAdam: the $L_p$ Adam Optimizer {#padam}
 At this point, we have all the ingredients we need to implement the $L_p$ `Adam` optimizer. The only modification from the previous section, is that instead of the gradient $g$ in the weight update rule [Eq.[3]](#eq_GD_update), we will use the `Adam` update rule. This is very similar to the `AdamW` version of `Adam`, only here instead of the $L_2$ weight decay step, we will use the $L_p$ norm weight decay step. The `PAdam` update rule is given by
 
 
