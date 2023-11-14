@@ -23,7 +23,7 @@ title: New Paths # the main title
 tagline: Nadav is thinking and writing about things # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
-  Nadav Outmezguine's Blog: A physicists view on ML
+  Nadav Outmezguine's Blog: A Physicists ML Journey
 
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
 url: "https://nadav-out.github.io"
