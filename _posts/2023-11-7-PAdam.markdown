@@ -211,7 +211,7 @@ $$
     w_i^{(t+1)}=\frac{\left\vert w_i^{(t)}\right\vert^{2-p}}{\left\vert w_i^{(t)}\right\vert^{2-p}(1+\eta\lambda_2)+\eta p\lambda_p}\left(w_i^{(t)}-\eta g_i^{(t)}\right)
 $$
 
-This one is option is already included in the current version of `PAdam`, and seem to help at the early phases of learning.
+Preliminary experiments with this update rule seem to help at the early stages of learning.
 
 __$p$-scheduling__: Just like any other hyperparameter, $p$ can be held fixed, or change its value as training evolve. Changing $p$ gradually from $2$ to it final $p<2$ value, will allow the network to first settle toward a desired minimum, and only then let  the $p<2$-norm 'look' for sparser solutions. One advantage of $p$-scheduling over the elastic-net approach, is that weights that are initialized below the $p<2$-norm threshold will not get stuck at 0.
 
