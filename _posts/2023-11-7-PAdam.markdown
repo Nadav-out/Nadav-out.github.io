@@ -5,9 +5,14 @@ date:   2023-11-7
 tags:   theory regularization lasso ridge optimization sparsity adam
 math:   true
 categories: ML
+updated: 2024-04-29
 ---
 
-In this post I'm going to introduce `PAdam`, my new variant of Adam optimizer which allows for any $p$-norm to be used as a regularizer. The work on `PAdam` isn't complete yet and much experimentation is still required. However, the preliminary results seem worthy of mention. I hope to publish more mature results as a research paper in the upcoming months. The github repository for `PAdam` can be found [here](https://github.com/nadav-out/padam).
+In this post I'm going to introduce `PAdam`, my new variant of Adam optimizer which allows for any $p$-norm to be used as a regularizer. 
+
+__Update__: We have now published a paper on `PAdam` which can be found [here](https://arxiv.org/abs/2404.10824). 
+
+The work on `PAdam` isn't complete yet and much experimentation is still required. However, the preliminary results seem worthy of mention. I hope to publish more mature results as a research paper in the upcoming months. The github repository for `PAdam` can be found [here](https://github.com/nadav-out/padam).
 
 
 #### Overview
@@ -142,8 +147,8 @@ At this point, we have all the ingredients we need to implement the $L_p$ `Adam`
 | 3    | $v_t \gets \beta_2 \cdot v_{t-1} + (1 - \beta_2) \cdot g_t^2$                                          |
 | 4    | $\hat{m}_t \gets m_t / (1 - \beta_1^t)$                                                                |
 | 5    | $\hat{v}_t \gets v_t / (1 - \beta_2^t)$                                                                |
-| 6    | $\hat{w}&#95;t \gets w&#95;{t-1} - \eta \hat{m}&#95;t / (\sqrt{\hat{v}&#95;t} + \epsilon)$   |
-| 7    | $w_t \gets \vert w_t\vert^{2-p}\hat{w}_t/(\vert w_t\vert^{2-p}+\eta p\lambda)$       |
+| 6    | $\hat{w}&#95;t \gets w&#95;{t-1} - \eta \hat{m}&#95;t / (\sqrt{\hat{v}&#95;t} + \epsilon)$             |
+| 7    | $w_t \gets \vert w_t\vert^{2-p}\hat{w}_t/(\vert w_t\vert^{2-p}+\eta p\lambda)$                         |
 
 Steps 1–6 follow the standard `Adam` update algorithm. As a reminder, $\eta$ is the learning rate, $\epsilon$ ensures numerical stability, and $\beta_1$ and $\beta_2$ are the exponential decay rates for the moment estimates of the gradient $g_t$, namely $m_t$ and $v_t$. Step 7 is our sole modification to `Adam`, introducing the $L_p$ norm weight update rule. The `PyTorch` implementation that follows is not the most aesthetically pleasing, nor the most efficient one. Currently, for simplicity, we will inherit from the `Adam` optimizer class and append step 7 after the optimizer step. This approach avoids rewriting the entire optimizer, which is highly optimized, by adding a computationally inexpensive step. It's important to note, however, that step 7 requires the weight before the `Adam` step, denoted $\vert w_t\vert$. To facilitate this, we must store all parameters before the optimizer step and then apply the decay to the parameters afterward. In principle, one could replace $\vert\hat{w}_t\vert$ instead of $\vert{w}_t\vert$ in step 7, which would be more memory-efficient and cleaner code, but this approach appears to yield inferior results. Bearing all this in mind, here is `PAdam`:
 
