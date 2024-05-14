@@ -9,6 +9,114 @@ categories: ML
 
 A second post about generalization toy models. In this post I aim to show how sparsity inducing regularization schemes can often times lead to better generalization.
 
+#### Skatching ideas
+Looking at the softmax part of the self-attention mechanism in transformers:
+
+$$
+    \text{softmax}(QK^T/\sqrt{d_k})
+$$
+
+We write the $Q$ and $K$ matrices using the linear transformation $Q=XW^Q$ and $K=XW^K$, namely
+
+$$
+
+    Q K^T=XW^Q{W^K}^TX^T.
+
+$$
+
+The dimension of $W^Q$ and $W^K$ is $D\times d_k$, where $D$ is the dimension of the input vectors, and $d_k$ is the dimension of the query and key vectors. Let's express those matrices as a list of $d_k$ $D$-dimensional vectors, $W^Q=\\{\boldsymbol{q}_1,\boldsymbol{q}_2,\ldots,\boldsymbol{q}_{d_k}\\}$, and $W^K=\\{\boldsymbol{k}_1,\boldsymbol{k}_2,\ldots,\boldsymbol{k}_{d_k}\\}$. The $W^Q(W^K)^T$ matrix can then be written as
+
+$$
+    M=W^Q(W^K)^T=\sum_{i=1}^{d_k}\boldsymbol{q}_i\boldsymbol{k}_i^T.
+$$
+
+Each of the terms in the sum above is a rank-1 $D\times D$ matrix. Let us further write each of the $d_k$ vectors as a magnitude times a unit vector, $\boldsymbol{q}_i=q_i\hat{q}_i$, and $\boldsymbol{k}_i=k_i\hat{k}_i$. The matrix $M$ can then be written as
+
+$$
+    M=\sum_{i=1}^{d_k}q_ik_i\hat{q}_i\hat{k}_i^T:=\sum_{i=1}^{d_k}r_i M_i\;\;:\;\;r_i=q_ik_i\;\;,M_i=\hat{q}_i\hat{k}_i^T.
+$$
+
+Now, we recall that the network is usually trained with an L2 regularization term on the weights. In therms of the above decomposition, this regularization is given by
+
+$$
+    L_{\rm WD}=\frac{\lambda}{2}\Vert W^Q\Vert_2^2+\frac{\lambda}{2}\Vert W^K\Vert_2^2=\frac{\lambda}{2}\sum_{i=1}^{d_k}\left(q_i^2+k_i^2\right).
+$$
+
+setting w.l.o.g. $q_i=r_i/k_i$, we see that the regularization term can be written as
+
+$$
+    L_{\rm WD}=\frac{\lambda}{2}\sum_{i=1}^{d_k}\left(\frac{r_i^2}{k_i^2}+k_i^2\right).
+$$
+
+This is the only part depending on $k_i$, and it is minimized when $k_i=\sqrt{r_i}$. Plugging this back into the loss, we get
+
+$$
+    L_{\rm WD}=\lambda\sum_{i=1}^{d_k}r_i
+$$
+
+
+### Simple example. 
+Let's consider a simple example of finding a low rank matrix $M=VU^T$, where $V$ and $U$ are D-dimensional vectors. But we try approximate it with a sum of 2 pairs of D-dimensional vectors, $m=v_1u_1^T+v_2u_2^T$. We assume the objective function is given by the Frobenius norm of the difference between the two matrices, $L=\Vert M-m\Vert_F^2$. We can write the loss as
+
+$$
+    L=\Vert VU^T-v_1u_1^T-v_2u_2^T\Vert_F^2={\rm Tr}\left[(VU^T-v_1u_1^T-v_2u_2^T)^T(VU^T-v_1u_1^T-v_2u_2^T)\right].
+
+$$
+
+Expanding the above expression, we can write the loss as a sum of products of two vectors, 
+
+$$
+    L=\Vert V\Vert^2\Vert U\Vert^2+\Vert v_1\Vert^2\Vert u_1\Vert^2+\Vert v_2\Vert^2\Vert u_2\Vert^2-2(V\cdot v_1)(U\cdot u_1)-2(V\cdot v_2)(U\cdot u_2)+2(u_1\cdot u_2)(v_1\cdot v_2).
+
+$$
+
+Expressing the vectors in terms of their magnitudes and unit vectors, $V=v\hat{v}$, $U=u\hat{u}$, $v_1=r_1\hat{v}_1$, $u_1=s_1\hat{u}_1$, $v_2=r_2\hat{v}_2$, $u_2=s_2\hat{u}_2$, we can write the loss as  
+
+$$
+    L=v^2u^2+r_1^2s_1^2+r_2^2s_2^2-2vu r_1s_1(\hat{v}\cdot\hat{v}_1)(\hat{u}\cdot\hat{u}_1)-2vu r_2s_2(\hat{v}\cdot\hat{v}_2)(\hat{u}\cdot\hat{u}_2)+2s_1s_2r_1r_2(\hat{u}_1\cdot\hat{u}_2)(\hat{v}_1\cdot\hat{v}_2).
+$$
+
+Now, we define $r_1s_1=x u v$, $r_2s_2=y u v$, and write the loss as
+
+$$
+    L=v^2u^2\left[1+x^2+y^2-2x(\hat{v}\cdot\hat{v}_1)(\hat{u}\cdot\hat{u}_1)-2y(\hat{v}\cdot\hat{v}_2)(\hat{u}\cdot\hat{u}_2)+2x y(\hat{u}_1\cdot\hat{u}_2)(\hat{v}_1\cdot\hat{v}_2)\right].
+$$
+
+Now, assume we regularize the loss with an L2 norm on the vectors, $L_{\rm WD}=(\lambda/2)(\Vert v_1\Vert^2+\Vert v_2\Vert^2+\Vert u_1\Vert^2+\Vert u_2\Vert^2)$. We can write this as $L_{\rm WD}=(\lambda/2)(r_1^2+r_2^2+s_1^2+s_2^2)$. Expressing $s_1^2=x^2 u^2v^2/r_1^2$, $s_2^2=y^2 u^2v^2/r_2^2$, we can write the regularized loss as
+
+$$
+    L_{\rm WD}=\lambda(r_1^2+r_2^2+x^2 u^2v^2/r_1^2+y^2 u^2v^2/r_2^2).
+
+$$
+
+This is the only place where $r_1$ and $r_2$ appear, so we can directly minimize it to get $r_1^2=u v x$, $r_2^2=u v y$. Plugging this back into the loss, we get
+
+$$
+    L=\lambda u v(x+y).
+
+$$
+
+We see that this is basically and $L_1$ regularization term for $x$ and $y$ (Recall $x,y>0$). For cleaner notation, we define $\lambda u v=\Lambda$, the full (original+regularization) loss is then given by
+
+$$
+    L=1+x^2+y^2-2x(\hat{v}\cdot\hat{v}_1)(\hat{u}\cdot\hat{u}_1)-2y(\hat{v}\cdot\hat{v}_2)(\hat{u}\cdot\hat{u}_2)+2xy(\hat{u}_1\cdot\hat{u}_2)(\hat{v}_1\cdot\hat{v}_2)+\Lambda(x+y).
+
+$$
+
+In the case of $D=2$, we can further simplify this by defining the angles between the vectors, $\cos\theta_i=\hat{v}\cdot\hat{v}_i$, $\cos\phi_i=\hat{u}\cdot\hat{u}_i$, and write the loss as
+
+$$
+    L=1+x^2+y^2-2x\cos\theta_1\cos\phi_1-2y\cos\theta_2\cos\phi_2+2xy\cos(\theta_1-\theta_2)\cos(\phi_1-\phi_2)+\Lambda(x+y).
+
+$$
+
+Nicely enough, this is independent of the dimensions of the vectors. The minimum w.r.t. the angles is simply when all angles are 0, giving
+
+$$
+    L=1+x^2+y^2-2(x+y)+\Lambda(x+y).
+
+$$
+
 
 #### Logic and challenges
 [The first post]({% link _posts/2023-10-30-generalization.markdown %}) focused on purely analytical results in linear models and demonstrated how and why ridge regularization can improve the ability of a model to generalize. In this post, I will focus on slightly more complex networks, demonstrating how sparsity inducing norms (specifically $L_1$ norm) can result in better generalization abilities. 

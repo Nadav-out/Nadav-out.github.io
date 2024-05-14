@@ -8,18 +8,18 @@ math:   true
 categories: ML LLM 
 ---
 
-In learning about transformers, I found it very hard to find a discussion of the transformer architecture that was easy to follow. I assume it is mainly because of my background in physics, and the way I like to read/learn about a new mathematical concept. So, I decided to try and write the intro to transformers I wish I had when I started learning about them. I assume I'm about to fail.
+When I started learning about transformers, I couldn't find a discussion of the transformer architecture that was easy for me to follow. I assume it is mainly because of my background in physics, and the way I'm used to reading/learning about new mathematical concepts. So, I decided to try and write the mathematical intro to transformers I wish I had when I started learning about them. I assume I'm about to fail, but let's see how it goes.
 
 ## Notation
-I'm going to use somewhat unorthodox notation in this post. This is probably a bad idea, but I just can't stand the sub/superscripts for matrices, since those 'should' be reserved for indices.
+I'm going to use somewhat unorthodox notations in this post. This is probably a bad idea, but I just can't stand the use of sub/superscripts when naming matrices, specifically the matrices $W^Q,\,W^K,\,W^V$ in the self-attention mechanism. 
 
 <!-- list of variables, dimensions, and indicies -->
 #### Variables
 To differentiate between learnable and non-learnable variables, I will use a tilde to denote learnable variables. Only 'fundamental' learnable variables will be denoted with a tilde. For example, the embedding matrix will be denoted by $\tilde{E}$, while the embedded sequence will be denoted by $X=\tilde{E}x$.
-- $x$: A sequence of $T_{\rm tot}$ tokens, $x=\{x_1,x_2,...,x_{T_{\rm tot}}\}$. Each token is a one-hot vector (a.k.a. unit vector) in $\mathbb{R}^V$, where $V$ is the size of the vocabulary.
-- $\tilde{E}\in \mathbb{R}^{V\times D}$: The embedding matrix. $D$ is the embedding dimension. Each token in the sequence is embedded into a $D$-dimensional vector given by $X_i=\tilde{E} x_i$.
-- $X\in \mathbb{R}^{T\times D}$: The embedded sequence. $T\leq T_{\rm tot}$ is the context window size. Each row of $X$ is the embedding of a token in the sequence. Namely, $X=\{X_1,X_2,...,X_{T}\}$.
-- $\tilde{Q}$, $\tilde{K}$, $\tilde{V}\in\mathbb{R}^{D\times d}$: The learnable linear transformations for the query, key, and value, respectively. $d=D/H$ where $H$ is the number of heads in the self-attention mechanism.
+- $x\in \mathbb{R}^{T\times V}$: A sequence of $T$ tokens, $x=\\{x_1,x_2,...,x_T\\}^T$. Each token is a one-hot vector (a.k.a. unit vector) in $\mathbb{R}^V$, where $V$ is the size of the vocabulary.
+- $\tilde{E}\in \mathbb{R}^{V\times D}$: The embedding matrix. $D$ is the embedding dimension. Each token in the sequence is embedded into a $D$-dimensional vector given by $X_i= x_i\tilde{E}$.
+- $X\in \mathbb{R}^{T\times D}$: The embedded sequence, $X=x\tilde{E}$. Each row of $X$ is the embedding of a token in the sequence. Namely, $X=\\{X_1,X_2,...,X_{T}\\}^T$.
+- $\tilde{Q}$, $\tilde{K}$, $\tilde{V}\in\mathbb{R}^{D\times d}$: The learnable linear transformations for the query, key, and value, respectively. $d=D/H$ where $H$ is the number of heads in the self-attention mechanism, which is chosen such that $d$ is an integer.
 - $Q$, $K$, $V\in \mathbb{R}^{T\times d}$: The query, key, and value for each token in the sequence, $Q=X\tilde{Q}$, $K=X\tilde{K}$, $V=X\tilde{V}$.
 - $A\in \mathbb{R}^{T\times T}$: The attention weights, $A=\text{softmax}_{\text{rows}}(QK^T/\sqrt{d})$.
 - $\tilde{O}\in \mathbb{R}^{D\times D}$: A learnable linear transformation that maps the output of the self-attention mechanism to the output of the layer. 
@@ -33,12 +33,12 @@ To differentiate between learnable and non-learnable variables, I will use a til
 For all indices, but $h$, we will use the Einstein summation convention. Namely, we will sum over repeated indices. For example, $X^{t,\epsilon}X_{t'}^{\epsilon}=\sum_{\epsilon}X^{t,\epsilon}X_{t'}^{\epsilon}$.
 
 ## Birds eye view
-The transformer architecture is a neural network architecture. It has an input, usually a sequence of tokens, and an output, usually a prediction for the next token in the sequence. The input is transformed into an output through a series of layers, each of which is composed of two main components: the self-attention mechanism and the feed-forward neural network. We will focus on a decoder-only transformer, which is the architecture used in the GPT models.
+The transformer architecture is a neural network architecture. It takes a text as input and outputs a prediction for the next token in the sequence. The input passed through a series of layers, each of which is composed of two main components: the self-attention mechanism and the feed-forward neural network. We will focus on a decoder-only transformer, which is the architecture used in the GPT models.
 
 #### Data and Embedding
-Our vocabulary has a total of $V$ tokens. The transformer input is a sequence of $T$ such tokens.  Each token in the sequence is represented by a one-hot vector (unit vector) in $\mathbb{R}^V$. The first layer of the transformer is an embedding layer, which maps each one-hot vector to a $D$-dimensional vector (usually $D\ll V$). Our post-emebdding sequence is then a tensor $X\in \mathbb{R}^{T\times D}$.
+The first step in the transformer is to take a text and convert it into a sequence of tokens. The tokenization of the text is independent form the transformer architecture, and is done using a predefined tokenizer.  Our vocabulary has a total of $V$ tokens and the text is tokenized into a sequence of $T$ such tokens.  Each token in the sequence is represented by a one-hot vector (unit vector) in $\mathbb{R}^V$. The first layer of the transformer is an embedding layer, which maps each one-hot vector to a $D$-dimensional vector (usually $D\ll V$). Our post-emebdding sequence is then a tensor $X\in \mathbb{R}^{T\times D}$.
 
-__Note on batching__: Mainly for computational reasons, the transformer processes the sequence in batches. Meaning, we process $B$ sequences at a time, where $B$ is the batch size. The tensor $X$ is then of size $B\times T\times D$. Since no operation in the transformer mixes the different sequences in the batch, we can think of the tensor $X$ as a collection of $B$ sequences, each of length $T$ and dimension $D$. We will therefore quite generally suppress the batch index $B$ in our notation. The fact that we use batches is very imporatnt for the training of the model, but not so much for understanding the architecture itself.
+__Note on batching__: Mainly for computational reasons, the transformer processes the sequence in batches. Meaning, we process $B$ sequences at a time, where $B$ is the batch size. The tensor $X$ is then of size $B\times T\times D$. Since no operation in the transformer mixes the different sequences in the batch, we can think of the tensor $X$ as a collection of $B$ sequences, each of length $T$ and dimension $D$. We will therefore quite generally suppress the batch index $B$ in our notation. The fact that we use batches is very important for the training of the model, but not so much for understanding the architecture itself.
 
 #### The transformer layers
 

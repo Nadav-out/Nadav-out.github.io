@@ -1,0 +1,70 @@
+---
+layout: post
+title:  "Intepretability project - nanoGPT trained on a WhatsApp group chat"
+date:   2024-05-13
+tags:   intepretability transformers toy-models 
+math:   true
+# date:   2023-06-07 10:44:59 -0700
+categories: ML LLM 
+---
+
+A few months ago I decided to train [Karpathy's nonGPT](https://github.com/karpathy/nanoGPT) on one of my WhatsApp group chats. This is a group of ten friends, and we have been chatting (quite intensively) for the past 10(!) years. What started as a joke, ended up being a very interesting project. Even though it is a character-level model, looking at the generated text, I realized that the model had learned a few interesting structural (and not so structural) patterns of our conversations. This post presents my attempts at understanding some things the model has learned, and how it learned them.
+
+
+## Observation 1: Correct timestamps + sender structure:
+Let's look at this example of a generated conversation: (To avoid privacy issues, I have erased the actual messages and the names of the senders).
+
+```bash
+[06/03/2021, 9:04:30] Member 2: [messege 1, erased for privecy]
+[06/03/2021, 9:04:40] Member 2: [messege 2, erased for privecy]
+[06/03/2021, 9:04:53] Member 9: [messege 3, erased for privecy]
+[06/03/2021, 9:10:38] Member 6: [messege 4, erased for privecy]
+[06/03/2021, 9:10:58] Member 2: [messege 5, erased for privecy]
+[06/03/2021, 9:11:04] Member 4: [messege 6, erased for privecy]
+...
+```
+
+The first thing that caught my eye was the correct structure of the timestamps and the sender names. Recall that this is a character-level model, so I was quite pleased to see that it had learned the structure of the timestamps and the sender names. In all my experiments, the model never generated a timestamp that was not in the correct format __and the correct order__, meaning, the timestamps are always increasing. 
+
+Later in this post, I will claim that the model also learned to distinguish between the senders. For that reason, I re-trained the model with each sender's name represented by a different token, other than that, the model was trained on single characters. For consistency, thtoughout this post I will always use the model trained with the tokenized sender names.
+
+##### __Context length:__
+The first 'sanity check' I did was to see that the model could actually learn the increasing nature of the timestamps. For that to be possible, the context length must be long enough to contain at least two consecutive timestamps. Below is a histogram of message lengths in the training data, which shows that the model context size of 256 is enough to contain many instances of more than a single timestamp.
+
+![Desktop View](/assets/images/msg_len.png){: width="500" height="589" }
+_Distribution of massage lengths in the training data. Orange line represents the model context size of 256. We see that there are many messeges much shorter than 256._
+
+##### __The model learned causality:__
+Next, I went on to try a time prediction task. I prompted the model with a timestamp and a fake message:
+
+``
+prompt = '[04/11/2022, 18:29:50] Member 2: Some text.\n[04/11/2022, 18:'
+``
+
+The probabilities for the next character were 
+
+
+
+| Next Token | Probability |
+|------------|-------------|
+| 3          | 67.87%      |
+| 2          | 23.38%      |
+| 4          | 6.69%       |
+| 5          | 1.85%       |
+| 1          | 0.11%       |
+| 0          | 0.09%       |
+
+We see that the model gives a very low probability to the next character being in the past, namely, being 0 or 1. This is a very interesting result, as it shows that the model has learned that time stamps should only increase. It also seems like the model learned that 3 is more likely to be the next character than 2, since there is only a short amount of time after `18:29:50` that a timestamp of `18:2x:xx` could make sense.
+To be clear, the above is just one example, but I have prompted the model with multiple timestamps, and the model always gives a very low probability to past timestamps.
+
+### Induction heads?
+To try and get a better understanding of how the model actually predicts the next character, I studied the attention weights of the model. I was hoping to see that the model attends to the previous timestamp when predicting the next one, similar to the concept of '[induction heads](https://arxiv.org/abs/2209.11895)'. I did find 4-5 heads in the model that attend to the previous timestamp when predicted the next, all of them are in the 4th-6th layers and look quite similar to the example below (1st head of the 4th layer):
+{% include attention_4_1.html %}
+In the visualization above, the darker the color, the higher the attention weight. We see that the model clearly attends to the previous timestamp when predicting the next one.
+
+However, there was one special head that appear to attend to the 'next number of the previous timestamp'. For example, if the previous timestamp was `7:23:45`, the model would attend to the `4` when predicting the minutes of the next timestamp. This head is the 4th head of the 5th layer, and it looks like this:
+{% include attention_5_4.html %}
+It is clearly seen that the attention in this head is shifted by one to the right, relative to the previous example.  
+
+I find the heads attending to the same number in the previous timestamp quite in-line with the concept of induction heads, as they seem to be learning a pattern in the data: `previous timestamp -> next timestamp`.  However, the head that attends to the 'next number of the previous timestamp' appears to be more nuanced. It seems like the induction is more convoluted, in the sense that it learns that the current timestamp should be shifted by a certain amount relative to the previous one. I almost want to call this a 'convolutional induction head', but not sure if that's the right description.
+ 
