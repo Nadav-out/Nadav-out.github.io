@@ -1,0 +1,48 @@
+/* General styles for buttons */
+button {
+    background-color: #2c2c2c; /* Default dark background */
+    color: #ccc; /* Default light text */
+    border: 1px solid #555;
+    padding: 1px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 1px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  button:hover {
+    background-color: #3a3a3a; /* Darken on hover */
+  }
+  
+  button.active {
+    background-color: #1a73e8; /* Active state blue */
+    color: white;
+  }
+  
+  button:focus {
+    outline: none;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6); /* Highlight focus */
+  }
+  
+  /* Light mode specific styles */
+  @media (prefers-color-scheme: light) {
+    button {
+      background-color: #f0f0f0; /* Light mode background */
+      color: #333; /* Light mode text */
+      border-color: #ddd;
+    }
+  
+    button:hover {
+      background-color: #e7e7e7; /* Lighter on hover */
+    }
+  
+    button.active {
+      background-color: #007bff; /* Bright blue for active state */
+      color: white;
+    }
+  }
+  
+  .visualization {
+    display: none;
+  }
+  
