@@ -8,7 +8,7 @@ math:   true
 categories: ML LLM 
 ---
 
-A few months ago I decided to train [Karpathy's nonGPT](https://github.com/karpathy/nanoGPT) on one of my WhatsApp group chats. This is a group of nine friends, and we have been chatting (quite intensively) for the past ten(!) years. What started as a joke, ended up being a very interesting project. Even though it is a character-level model, looking at the generated text, I realized that the model had learned a few interesting structural (and not so structural) patterns of our conversations. This post presents my attempts at understanding some things the model has learned, and how it learned them.
+A few months ago I decided to train [Karpathy's nonGPT](https://github.com/karpathy/nanoGPT) on one of my WhatsApp group chats. This is a group of nine friends, and we have been chatting (quite intensively) for the past ten(!) years. What started as a joke, ended up being a very interesting project. Even though it is a character-level model, looking at the generated text, I realized that the model had learned a few interesting structural (and not so structural) patterns of our conversations. This post presents my attempts at understanding some things the model has learned, and how it learned them. A notebook including most of the calculations and visualizations can be found [here](https://github.com/Nadav-out/nanoGPT/blob/main/notebooks/chat_interp_v1.ipynb).
 
 ### The two main observations and an interpretation
 
@@ -87,7 +87,7 @@ To try and get a better understanding of how the model actually predicts the nex
 
 {% include posts/interp/buttons_group1.html %}
 
-I have also identified one special head, that appear to attend to the 'next number of the previous timestamp'. For example, if the previous timestamp was `7:23:45`, the model would attend to the `4` when predicting the minutes of the next timestamp. This head is the (3,4) head, and it is shown below:
+I have also identified one special head, that appear to attend to the 'next number of the previous timestamp'. For example, if the previous timestamp was `7:23:45`, the model would attend to the `4` when predicting the minutes of the next timestamp. This head is the (4,3) head, and it is shown below:
 {% include posts/interp/attention_4_3.html %}
 It is clearly seen that the attention in this head is shifted by one to the right relative to the previous examples.  
 
@@ -125,6 +125,8 @@ The two observations I presented here are quite intriguing to me. The evidence I
 
 1. __Time differences:__ I should systematically study the time differences between consecutive timestamps the model predicts. It would be interesting to see if the model indeed 'copies' time difference between the timestamps.
 2. __Turn off features/heads:__ One way to test whether the heads I identified are indeed responsible for the observations I made, is to turn them off and see if the model stops respecting causality or stops distinguishing between the senders. In such small models, however, I'm afraid that turning off an entire head might have effects on the model's performance that extend beyond the specific behavior I'm interested in.
+
+One other direction I'm interested in exploring is the effect of sparsity on interpretability. I have trained quite a few of these nanoGPT models with our sparsity inducing optimization (see [$p$WD paper](https://arxiv.org/abs/2404.10824v2) and [PAdam blog post](% link _posts/2023-11-7-PAdam.markdown %)). It would be interesting to see if those induction heads are still easily interpretable when the model is sparse.
 
 I might update this post in the future with the results of any future experiments I conduct. In the meantime, I'm quite pleased with the amount of structure the model has learned, and what I was able to learn from it.
 
